@@ -82,7 +82,7 @@ object MsgPack {
    * @param item
    * @param out
    */
-  def pack(item: Any, out: DataOutputStream) {
+  def pack(item: Any, out: DataOutputStream): Unit = {
     DefaultAnyCodec.pack(out, item)
   }
 

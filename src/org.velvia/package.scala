@@ -8,7 +8,7 @@ import org.velvia.msgpack.Codec
  * Contains newer typeclass-based APIs
  */
 package object msgpack {
-  def pack[A: Codec](item: A, out: DataOutputStream) { implicitly[Codec[A]].pack(out, item) }
+  def pack[A: Codec](item: A, out: DataOutputStream): Unit = { implicitly[Codec[A]].pack(out, item) }
   def unpack[A: Codec](in: DataInputStream): A = { implicitly[Codec[A]].unpack(in) }
 
   /**

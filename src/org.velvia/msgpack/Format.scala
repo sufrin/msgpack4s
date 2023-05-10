@@ -61,7 +61,7 @@ object Format {
   val MP_RAW16 = 0xc5.toByte
   val MP_RAW32 = 0xc6.toByte
 
-  def packRawBytes(data: Array[Byte], out: DataOutputStream) {
+  def packRawBytes(data: Array[Byte], out: DataOutputStream): Unit =  {
     if (data.length <= MAX_8BIT) {
       out.write(MP_RAW8)
       out.write(data.length)
@@ -75,7 +75,7 @@ object Format {
     out.write(data)
   }
 
-  def packString(str: String, out: DataOutputStream) {
+  def packString(str: String, out: DataOutputStream): Unit =  {
     val bytes = str.getBytes("UTF-8")
     if (bytes.length <= MAX_5BIT) {
       out.write(bytes.length | MP_FIXSTR)
@@ -92,7 +92,7 @@ object Format {
     out.write(bytes)
   }
 
-  def packLong(value: Long, out: DataOutputStream) {
+  def packLong(value: Long, out: DataOutputStream): Unit = {
     if (value >= 0) {
       if (value <= MAX_7BIT) {
         out.write(value.toInt | MP_FIXNUM)
@@ -128,7 +128,7 @@ object Format {
     }
   }
 
-  def packSeq[T: Codec](s: Seq[T], out: DataOutputStream) {
+  def packSeq[T: Codec](s: Seq[T], out: DataOutputStream): Unit = {
     val packer = implicitly[Codec[T]]
     if (s.length <= MAX_4BIT) {
       out.write(s.length | MP_FIXARRAY)
@@ -138,25 +138,25 @@ object Format {
     } else {
       out.write(MP_ARRAY32)
       out.writeInt(s.length)
+      s foreach { packer.pack(out, _) }
     }
-    s foreach { packer.pack(out, _) }
   }
 
-  def packMap[K: Codec, V: Codec](map: collection.Map[K, V], out: DataOutputStream) {
+  def packMap[K: Codec, V: Codec](map: collection.Map[K, V], out: DataOutputStream): Unit = {
     val keyCodec = implicitly[Codec[K]]
     val valCodec = implicitly[Codec[V]]
     writeMapHeader(map.size, out)
     map foreach { case (k, v) => keyCodec.pack(out, k); valCodec.pack(out, v) }
   }
 
-  def packMapSeq[K: Codec, V: Codec](map: Seq[(K, V)], out: DataOutputStream) {
+  def packMapSeq[K: Codec, V: Codec](map: Seq[(K, V)], out: DataOutputStream): Unit = {
     val keyCodec = implicitly[Codec[K]]
     val valCodec = implicitly[Codec[V]]
     writeMapHeader(map.size, out)
     map foreach { case (k, v) => keyCodec.pack(out, k); valCodec.pack(out, v) }
   }
 
-  private def writeMapHeader(mapSize: Int, out: DataOutputStream) {
+  private def writeMapHeader(mapSize: Int, out: DataOutputStream): Unit = {
     if (mapSize <= MAX_4BIT) {
       out.write(mapSize | MP_FIXMAP)
     } else if (mapSize <= MAX_16BIT) {
@@ -205,7 +205,7 @@ object Format {
       vec += unpacker.unpack(in)
       i += 1
     }
-    vec.result
+    vec.result()
   }
 
   def unpackMap[K: Codec, V: Codec](size: Int, in: DataInputStream): Map[K, V] = {
@@ -217,6 +217,6 @@ object Format {
     for { i <- 0 until size } {
       map += keyCodec.unpack(in) -> valCodec.unpack(in)
     }
-    map.result
+    map.result()
   }
 }
